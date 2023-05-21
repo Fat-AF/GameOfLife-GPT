@@ -1,69 +1,166 @@
 <!DOCTYPE html>
 <html>
-<body style="background-color: #F3F3F3;">
+<head>
+  <title>Conway's Game of Life - Implemented by ChatGPT</title>
+  <style>
+    body {
+      background-color: #F3F3F3;
+      text-align: center;
+    }
+    #title {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .btn {
+      width: 150px;
+      height: 50px;
+      margin: 10px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #randomButton {
+      background-color: red;
+      color: white;
+    }
+    #playButton {
+      background-color: green;
+      color: white;
+    }
+    #pauseButton {
+      background-color: blue;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="title">Conway's Game of Life - Implemented by ChatGPT</div>
+  <canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;"></canvas>
+  <button id="randomButton" class="btn" onclick="randomize()">Randomize Seed</button>
+  <button id="playButton" class="btn" onclick="start()">Start</button>
+  <button id="pauseButton" class="btn" onclick="pause()">Pause</button>
+  <script>
+    const N = 50;
+    let grid = Array.from({length: N}, () => Array.from({length: N}, () => 0));
+    let canvas = document.getElementById('myCanvas');
+    let ctx = canvas.getContext('2d');
+    let isPlaying = false;
+    let interval;
 
-<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3; margin-top: 10px; margin-bottom: 10px;">
-Your browser does not support the HTML5 canvas tag.</canvas>
+    const patterns = {
+      'Block': [
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+        [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+      ],
+      'Blinker': [
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 0, 0, 0, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+      ],
+      // add more patterns here...
+    };
 
-<button id="playButton" onclick="togglePlayPause()" style="width: 80px; height: 40px;">Play</button>
-<button id="resetButton" onclick="reset()" style="width: 80px; height: 40px;">Reset</button>
+    canvas.addEventListener('click', function(event) {
+      var x = event.pageX - canvas.offsetLeft;
+      var y = event.pageY - canvas.offsetTop;
+      var cellX = Math.floor(x / 10);
+      var cellY = Math.floor(y / 10);
+      grid[cellY][cellX] = grid[cellY][cellX] ? 0 : 1;
+      draw();
+    }, false);
 
-<script>
-const N = 50;
-let grid = Array.from({length: N}, () => Array.from({length: N}, () => 0));
-let canvas = document.getElementById('myCanvas');
-let ctx = canvas.getContext('2d');
-let isPlaying = false;
-
-canvas.addEventListener('click', function(evt) {
-    let x = Math.floor(evt.offsetX / 10);
-    let y = Math.floor(evt.offsetY / 10);
-    grid[y][x] = grid[y][x] ? 0 : 1;  // toggle cell state
-    draw();
-}, false);
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for(let i=0; i<N; i++) {
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for(let i=0; i<N; i++) {
         for(let j=0; j<N; j++) {
-            ctx.fillStyle = grid[i][j] === 1 ? '#007BFF' : '#FFFFFF'; // live cells are blue, dead cells are white
-            ctx.fillRect(10*j, 10*i, 10, 10);
+          if(grid[i][j]) {
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(j*10, i*10, 10, 10);
+          }
         }
+      }
     }
-}
 
-function update() {
-    let newGrid = JSON.parse(JSON.stringify(grid));
-    for(let i=0; i<N; i++) {
+    function update() {
+      if (!isPlaying) {
+        return;
+      }
+      let newGrid = JSON.parse(JSON.stringify(grid));
+      for(let i=0; i<N; i++) {
         for(let j=0; j<N; j++) {
-            let neighbors = [
-                grid[(i-1+N)%N][(j-1+N)%N], grid[(i-1+N)%N][j], grid[(i-1+N)%N][(j+1)%N],
-                grid[i][(j-1+N)%N],                             grid[i][(j+1)%N],
-                grid[(i+1)%N][(j-1+N)%N], grid[(i+1)%N][j], grid[(i+1)%N][(j+1)%N]
-            ].reduce((a, b) => a + b);
-            newGrid[i][j] = (grid[i][j] === 1) ? ((neighbors === 2 || neighbors === 3) ? 1 : 0) : ((neighbors === 3) ? 1 : 0);
+          let neighbours = countNeighbours(i, j);
+          if(grid[i][j] && (neighbours < 2 || neighbours > 3)) {
+            newGrid[i][j] = 0;
+          } else if(!grid[i][j] && neighbours === 3) {
+            newGrid[i][j] = 1;
+          }
         }
+      }
+      grid = newGrid;
+      draw();
+      setTimeout(update, 100);
     }
-    grid = newGrid;
-    draw();
-}
 
-function togglePlayPause() {
-    isPlaying = !isPlaying;
-    document.getElementById("playButton").innerText = isPlaying ? "Pause" : "Play";
-}
-
-function reset() {
-    grid = Array.from({length: N}, () => Array.from({length: N}, () => 0));
-    draw();
-}
-
-setInterval(() => {
-    if(isPlaying) {
-        update();
+    function countNeighbours(x, y) {
+      let sum = 0;
+      for(let i=-1; i<2; i++) {
+        for(let j=-1; j<2; j++) {
+          let newX = (x + i + N) % N;
+          let newY = (y + j + N) % N;
+          sum += grid[newX][newY];
+        }
+      }
+      return sum - grid[x][y];
     }
-}, 100);
-</script>
 
+    function randomize() {
+      for(let i=0; i<N; i++) {
+        for(let j=0; j<N; j++) {
+          grid[i][j] = 0;
+        }
+      }
+
+      const patternNames = Object.keys(patterns);
+      const randomPatternName = patternNames[Math.floor(Math.random() * patternNames.length)];
+      const randomPattern = patterns[randomPatternName];
+      const offsetX = Math.floor((N - randomPattern.length) / 2);
+      const offsetY = Math.floor((N - randomPattern[0].length) / 2);
+
+      for(let i=0; i<randomPattern.length; i++) {
+        for(let j=0; j<randomPattern[i].length; j++) {
+          grid[i + offsetX][j + offsetY] = randomPattern[i][j];
+        }
+      }
+
+      draw();
+    }
+
+    function start() {
+      isPlaying = true;
+      update();
+    }
+
+    function pause() {
+      isPlaying = false;
+    }
+
+    // start the game with random seed
+    randomize();
+  </script>
 </body>
 </html>

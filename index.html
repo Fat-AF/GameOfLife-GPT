@@ -146,7 +146,7 @@ function draw() {
     for(let j=0; j<N; j++) {
       if(grid[i][j]) {
         if (grid[i][j] < 3) {
-          ctx.fillStyle = 'rgb(255, 0, 0)'; // New cells are red
+          ctx.fillStyle = 'rgb(128, 128, 128)'; // New cells are grey
         } else if (grid[i][j] < 6) {
           ctx.fillStyle = 'rgb(0, 255, 0)'; // Cells that have lived a bit are green
         } else {

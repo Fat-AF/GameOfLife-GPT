@@ -83,62 +83,42 @@
     }, false);
 
 const patterns = {
-      'r_pentomino': [
+  'glider': [
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 1, 1]
+  ],
+  'lwss': [ // Lightweight spaceship
+    [0, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+    [1, 0, 0, 1, 0]
+  ],
+  'r_pentomino': [
     [0, 1, 1],
     [1, 1, 0],
     [0, 1, 0]
-],
-    'diehard': [
+  ],
+  'diehard': [
     [0, 0, 0, 0, 0, 0, 1, 0],
     [1, 1, 0, 0, 0, 0, 0, 0],
     [0, 1, 0, 0, 0, 1, 1, 1]
-],
-    
-    'acorn': [
+  ],
+  'acorn': [
     [1, 0, 0, 0, 1, 0, 0],
     [0, 0, 1, 0, 0, 0, 0],
     [1, 1, 0, 0, 0, 0, 0]
-],
-    'bunnies_9': [
-    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-    [1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1],
-    [1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-],
+  ]
+};
 
-    'cousins': [
-    [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-],
-
-    'eight': [
-    [0, 1, 1, 0],
-    [1, 0, 0, 1],
-    [0, 1, 1, 0],
-],
-    
-    'eater_bound_frob': [
-    [0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0],
-    [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
-    [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0],
-    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
-]
-
-
-    };
-
+ 
+function createEmptyGrid(rows, cols) {
+  return new Array(rows).fill(null).map(() =>
+    new Array(cols).fill(null).map(() =>
+      ({state: 0, age: 0}) 
+    )
+  );
+}
     
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -232,6 +212,61 @@ function draw() {
   draw();
 }
 
+    function randomizeGrid(grid, p = 0.5) {
+  return grid.map(row => row.map(() => Math.random() < p ? {state: 1, age: 1} : {state: 0, age: 0}));
+}
+
+function insertPattern(grid, pattern, startX = 0, startY = 0) {
+  for (let i = 0; i < pattern.length; i++) {
+    for (let j = 0; j < pattern[i].length; j++) {
+      grid[startY + i][startX + j].state = pattern[i][j];
+      if(pattern[i][j] === 1) {
+        grid[startY + i][startX + j].age = 1;
+      }
+    }
+  }
+}
+    
+    function step(grid) {
+  const newGrid = createEmptyGrid(grid.length, grid[0].length);
+
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      const neighbours = countNeighbours(grid, x, y);
+      if (grid[y][x].state === 1 && (neighbours === 2 || neighbours === 3)) {
+        newGrid[y][x] = {state: 1, age: grid[y][x].age + 1}; // increment the age
+      } else if (grid[y][x].state === 0 && neighbours === 3) {
+        newGrid[y][x] = {state: 1, age: 1};
+      } else {
+        newGrid[y][x] = {state: 0, age: 0};
+      }
+    }
+  }
+
+  return newGrid;
+}
+    
+   function render(grid) {
+  let output = '';
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      if (grid[y][x].state === 0) {
+        output += '⬛';
+      } else {
+        if (grid[y][x].age < 2) {
+          output += '🟩'; // green
+        } else if (grid[y][x].age < 5) {
+          output += '🟦'; // blue
+        } else {
+          output += '🟥'; // red
+        }
+      }
+    }
+    output += '\n';
+  }
+  console.log(output);
+}
+    
     function start() {
       isPlaying = true;
       statusText.style.display = 'none';

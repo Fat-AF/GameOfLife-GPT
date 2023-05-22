@@ -46,6 +46,12 @@
     #pauseButton:hover {
       background-color: #C0392B;
     }
+    #statusText {
+      font-size: 1.5em;
+      color: #2C3E50;
+      margin-top: 20px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -56,6 +62,7 @@
     <button id="playButton" class="btn" onclick="start()">Start</button>
     <button id="pauseButton" class="btn" onclick="pause()">Pause</button>
   </div>
+  <div id="statusText">This simulation has ended</div>
   <script>
     const N = 50;
     let grid = Array.from({length: N}, () => Array.from({length: N}, () => 0));
@@ -64,8 +71,18 @@
     let isPlaying = false;
     let interval;
     let previousGrid;
+    let statusText = document.getElementById('statusText');
 
-    const patterns = {
+    canvas.addEventListener('click', function(event) {
+      var x = event.pageX - canvas.offsetLeft;
+      var y = event.pageY - canvas.offsetTop;
+      var cellX = Math.floor(x / 10);
+      var cellY = Math.floor(y / 10);
+      grid[cellY][cellX] = grid[cellY][cellX] ? 0 : 1;
+      draw();
+    }, false);
+
+const patterns = {
       'r_pentomino': [
     [0, 1, 1],
     [1, 1, 0],
@@ -122,26 +139,24 @@
 
     };
 
-    canvas.addEventListener('click', function(event) {
-      var x = event.pageX - canvas.offsetLeft;
-      var y = event.pageY - canvas.offsetTop;
-      var cellX = Math.floor(x / 10);
-      var cellY = Math.floor(y / 10);
-      grid[cellY][cellX] = grid[cellY][cellX] ? 0 : 1;
-      draw();
-    }, false);
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for(let i=0; i<N; i++) {
-        for(let j=0; j<N; j++) {
-          if(grid[i][j]) {
-            ctx.fillStyle = `rgb(0, 0, ${(grid[i][j] * 20) % 256})`;
-            ctx.fillRect(j*10, i*10, 10, 10);
-          }
+    
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for(let i=0; i<N; i++) {
+    for(let j=0; j<N; j++) {
+      if(grid[i][j]) {
+        if (grid[i][j] < 3) {
+          ctx.fillStyle = 'rgb(255, 0, 0)'; // New cells are red
+        } else if (grid[i][j] < 6) {
+          ctx.fillStyle = 'rgb(0, 255, 0)'; // Cells that have lived a bit are green
+        } else {
+          ctx.fillStyle = 'rgb(0, 0, 255)'; // Cells that have lived the longest are blue
         }
+        ctx.fillRect(j*10, i*10, 10, 10);
       }
     }
+  }
+}
 
     function update() {
       if (!isPlaying) {
@@ -167,11 +182,11 @@
       draw();
       if(noChange) {
         pause();
+        statusText.style.display = 'block';
         return;
       }
       setTimeout(update, 100);
     }
-
 
     function countNeighbours(x, y) {
       let sum = 0;
@@ -186,29 +201,40 @@
     }
 
     function randomize() {
-      for(let i=0; i<N; i++) {
-        for(let j=0; j<N; j++) {
-          grid[i][j] = 0;
-        }
-      }
-
-      const patternNames = Object.keys(patterns);
-      const randomPatternName = patternNames[Math.floor(Math.random() * patternNames.length)];
-      const randomPattern = patterns[randomPatternName];
-      const offsetX = Math.floor((N - randomPattern.length) / 2);
-      const offsetY = Math.floor((N - randomPattern[0].length) / 2);
-
-      for(let i=0; i<randomPattern.length; i++) {
-        for(let j=0; j<randomPattern[i].length; j++) {
-          grid[i + offsetX][j + offsetY] = randomPattern[i][j];
-        }
-      }
-
-      draw();
+  // Clear the grid first
+  for(let i=0; i<N; i++) {
+    for(let j=0; j<N; j++) {
+      grid[i][j] = 0;
     }
+  }
+  
+  if (Math.random() < 0.5) { // 50% chance to initialize truly random grid
+    for(let i=0; i<N; i++) {
+      for(let j=0; j<N; j++) {
+        grid[i][j] = Math.round(Math.random());
+      }
+    }
+  } else { // 50% chance to initialize with one of the patterns
+    let patternNames = Object.keys(patterns);
+    let patternName = patternNames[Math.floor(Math.random() * patternNames.length)];
+    let pattern = patterns[patternName];
+    
+    let startX = Math.floor(Math.random() * (N - pattern.length));
+    let startY = Math.floor(Math.random() * (N - pattern[0].length));
+    
+    for(let i=0; i<pattern.length; i++) {
+      for(let j=0; j<pattern[0].length; j++) {
+        grid[startX + i][startY + j] = pattern[i][j];
+      }
+    }
+  }
+  
+  draw();
+}
 
     function start() {
       isPlaying = true;
+      statusText.style.display = 'none';
       update();
     }
 

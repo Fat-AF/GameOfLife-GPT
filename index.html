@@ -77,7 +77,7 @@ canvas.addEventListener('click', function(event) {
       var y = event.pageY - canvas.offsetTop;
       var cellX = Math.floor(x / 10);
       var cellY = Math.floor(y / 10);
-      grid[cellY][cellX] = grid[cellY][cellX] ? 0 : 1;
+      grid[cellY][cellX].state = grid[cellY][cellX].state ? 0 : 1;
       draw();
     }, false);
 
@@ -179,13 +179,68 @@ function createEmptyGrid(rows, cols) {
       return sum - grid[x][y].state;
     }
 
-    function randomize() {
+function randomize() {
   // Clear the grid first
   for(let i=0; i<N; i++) {
     for(let j=0; j<N; j++) {
-      grid[i][j] = 0;
+      grid[i][j] = {state: 0, age: 0};
     }
   }
+  
+  if (Math.random() < 0.5) { // 50% chance to initialize truly random grid
+    for(let i=0; i<N; i++) {
+      for(let j=0; j<N; j++) {
+        grid[i][j].state = Math.round(Math.random());
+      }
+    }
+  } else { // 50% chance to initialize with one of the patterns
+    let patternNames = Object.keys(patterns);
+    let patternName = patternNames[Math.floor(Math.random() * patternNames.length)];
+    let pattern = patterns[patternName];
+    
+    let startX = Math.floor(Math.random() * (N - pattern.length));
+    let startY = Math.floor(Math.random() * (N - pattern[0].length));
+    
+    for(let i=0; i<pattern.length; i++) {
+      for(let j=0; j<pattern[0].length; j++) {
+        grid[startX + i][startY + j].state = pattern[i][j];
+        if(pattern[i][j] === 1) {
+          grid[startX + i][startY + j].age = 1;
+        }
+      }
+    }
+  }
+  
+  draw();
+}
+
+  
+  if (Math.random() < 0.5) { // 50% chance to initialize truly random grid
+    for(let i=0; i<N; i++) {
+      for(let j=0; j<N; j++) {
+        grid[i][j].state = Math.round(Math.random());
+      }
+    }
+  } else { // 50% chance to initialize with one of the patterns
+    let patternNames = Object.keys(patterns);
+    let patternName = patternNames[Math.floor(Math.random() * patternNames.length)];
+    let pattern = patterns[patternName];
+    
+    let startX = Math.floor(Math.random() * (N - pattern.length));
+    let startY = Math.floor(Math.random() * (N - pattern[0].length));
+    
+    for(let i=0; i<pattern.length; i++) {
+      for(let j=0; j<pattern[0].length; j++) {
+        grid[startX + i][startY + j].state = pattern[i][j];
+        if(pattern[i][j] === 1) {
+          grid[startX + i][startY + j].age = 1;
+        }
+      }
+    }
+  }
+  
+  draw();
+}
   
   if (Math.random() < 0.5) { // 50% chance to initialize truly random grid
     for(let i=0; i<N; i++) {
